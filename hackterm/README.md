@@ -1,73 +1,61 @@
-# React + TypeScript + Vite
+# HACKTERM
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A browser-based terminal hacking incremental game. Inspired by Hacknet.
 
-Currently, two official plugins are available:
+> **This is a work of fiction for entertainment purposes only.**
+> All corporations, governments, persons, IP addresses, vulnerabilities, and
+> events depicted are entirely fictional. Any resemblance to real organizations,
+> systems, or security incidents is coincidental. This game does not provide
+> instructions for real-world hacking and is not intended to encourage or
+> facilitate unauthorized access to computer systems.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## Gameplay
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+You start with a terminal and $50. Scan networks, exploit vulnerabilities,
+install backdoors for passive income, and manage your heat level before the
+FBI closes in. Prestige at the end of each run for permanent bonuses.
 
-## Expanding the ESLint configuration
+### Core loop
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+nmap 10.0.1.0/24          discover nearby hosts
+probe <ip>                 scan a host for vulnerabilities
+exploit <ip> -v <vuln_id>  run a timed exploit
+exploit <ip> -z            instant exploit using a zero-day from inventory
+connect <ip>               open a shell on a compromised host
+backdoor                   install a persistent income listener
+exfiltrate                 dump data for a one-time payout
+clearlog                   reduce heat by wiping traces
+disconnect                 close the current shell
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Prestige endings
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+| Ending | Trigger | Bonus |
+|---|---|---|
+| **Legend** | Earn $25,000+ then `retire` | +0.5× income multiplier |
+| **FBI** | Heat reaches 100% | +1 clearance level (free starting upgrade) |
+| **Counter-hacked** | Rival operator owns you | 15% of final money retained |
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Market
+
 ```
+market list                browse zero-days and crew bots
+market buy <id>            purchase an item
+market inv                 view your inventory and active crew
+market fire <id>           dismiss a crew member
+```
+
+---
+
+## Development
+
+```bash
+npm install
+npm run dev
+npm run build
+```
+
+Built with React + TypeScript + Vite + Zustand + Tailwind CSS.
