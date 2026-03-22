@@ -36,6 +36,7 @@ import { clearCommand } from './clear'
 import { deactivateCommand } from './deactivate'
 import { retireCommand } from './retire'
 import { debugCommand } from './debug'
+import { marketCommand } from './market'
 
 // ─── Registry ─────────────────────────────────────────────────────────────────
 
@@ -55,6 +56,7 @@ const ALL_COMMANDS: CommandHandler[] = [
   deactivateCommand,
   retireCommand,
   debugCommand,
+  marketCommand,
   clearlogCommand,
   statusCommand,
   upgradeCommand,

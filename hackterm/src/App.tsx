@@ -16,7 +16,7 @@ function buildBootMessage(
   retainedMoney: number,
   isFirstRun: boolean,
 ) {
-  const lines: Array<{ text: string; type: 'system' | 'info' | 'success' | 'warning' | 'default' | 'cyan' }> = [
+  const lines: Array<{ text: string; type: 'system' | 'info' | 'success' | 'warning' | 'default' }> = [
     { text: 'HACKTERM v0.1 ready. Type \'help\' to list commands.', type: 'system' },
     { text: '', type: 'default' },
     { text: 'Your node: localhost (10.0.0.1)', type: 'info' },

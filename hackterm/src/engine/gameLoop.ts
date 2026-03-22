@@ -1,6 +1,7 @@
 import { useGameStore } from '../store/gameStore'
 import type { ActiveOperation } from '../types'
 import { getClearlogMultiplier } from '../data/upgrades'
+import { CREW_BOTS } from '../data/marketItems'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -29,9 +30,9 @@ let lastCountdownSecond = -1
 
 // ─── FBI message pools ────────────────────────────────────────────────────────
 
-const FBI_MONITOR_MESSAGES = [
+const FBI_MONITOR_MESSAGES: [string, string][] = [
   [`[FBI_TRX] Correlation sweep active on flagged subnet.`,
-   `           Traffic signature match: ${() => Math.floor(55 + Math.random() * 30)}% confidence.`],
+   `           Traffic signature match: ${Math.floor(55 + Math.random() * 30)}% confidence.`],
   [`[FBI_TRX] FISA warrant submitted for ISP log disclosure.`,
    `           Awaiting judicial approval. Monitoring continues.`],
   [`[FBI_TRX] Deep packet inspection enabled on egress routes.`,
@@ -83,6 +84,9 @@ export function tick() {
 
   // 6. Counter-hack chance
   handleCounterHack()
+
+  // 7. Crew bot actions
+  handleCrewBots()
 }
 
 // ─── Heat Decay ───────────────────────────────────────────────────────────────
@@ -152,9 +156,7 @@ function handleHeatEvents() {
     const sinceLast = Date.now() - lastFbiEventAt
     if (lastFbiEventAt === 0 || sinceLast > FBI_MONITOR_INTERVAL_MS) {
       useGameStore.setState({ lastFbiEventAt: Date.now() })
-      const [line1, line2raw] = pickRandom(FBI_MONITOR_MESSAGES)
-      // line2 may be a function (for dynamic confidence %)
-      const line2 = typeof line2raw === 'function' ? line2raw() : line2raw
+      const [line1, line2] = pickRandom(FBI_MONITOR_MESSAGES)
       print(``, 'default')
       print(line1, 'warning')
       print(line2, 'warning')
@@ -312,6 +314,40 @@ function handleOperationComplete(op: ActiveOperation) {
       print(`[+] LOGS CLEARED on ${node.hostname}`, 'success')
       print(`[+] Heat reduced by ${heatRemoved}`, 'success')
       break
+    }
+  }
+}
+
+// ─── Crew Bots ────────────────────────────────────────────────────────────────
+
+const BOT_ACTION_COOLDOWN_MS = 45_000
+
+function handleCrewBots() {
+  const store = useGameStore.getState()
+  if (store.crewBots.length === 0) return
+
+  const now = Date.now()
+
+  for (const bot of store.crewBots) {
+    if (now - bot.lastActionAt < BOT_ACTION_COOLDOWN_MS) continue
+
+    // Find an uncompromised node within this bot's tier range
+    const target = store.nodes.find(
+      (n) => !n.compromised && n.tier <= bot.maxTier && store.knownNodeIds.includes(n.id)
+    )
+
+    if (target) {
+      store.compromiseNode(target.id)
+      store.addHeat(bot.heatPerTick)
+      store.updateBotLastAction(bot.instanceId)
+      store.print(`[bot] ${bot.name} compromised ${target.hostname} (${target.ip})`, 'info')
+    } else {
+      // All known eligible nodes already compromised — generate passive income instead
+      const def = CREW_BOTS.find((b) => b.id === bot.botId)
+      const income = Math.round((def?.incomePerSec ?? 0.1) * 10 * 100) / 100
+      store.addMoney(income)
+      store.addHeat(bot.heatPerTick * 0.3)
+      store.updateBotLastAction(bot.instanceId)
     }
   }
 }

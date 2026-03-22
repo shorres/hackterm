@@ -46,6 +46,7 @@ export type NodeType =
   | 'corporate_server'
   | 'database_server'
   | 'web_server'
+  | 'gov_server'
 
 export interface GameNode {
   id: string
@@ -122,6 +123,27 @@ export interface PrestigeMeta {
   clearanceLevel: number    // mole run count (cap 5), grants free starting upgrades
 }
 
+// ─── Market Items ─────────────────────────────────────────────────────────────
+
+export interface ZeroDayItem {
+  id: string
+  name: string
+  description: string
+  targetService: string  // matches port.service on nodes
+  tier: number
+  price: number
+}
+
+export interface CrewBotInstance {
+  instanceId: string  // nanoid, unique per purchase
+  botId: string       // references the market item id
+  name: string
+  maxTier: number
+  efficiency: number  // 0.5–0.75, multiplier on income contribution
+  heatPerTick: number
+  lastActionAt: number // timestamp of last auto-exploit
+}
+
 // ─── Game State ───────────────────────────────────────────────────────────────
 
 export interface GameState {
@@ -154,6 +176,10 @@ export interface GameState {
 
   // Player hardware
   upgrades: HardwareUpgrades
+
+  // Market inventory
+  zerodays: ZeroDayItem[]      // zero-days in inventory
+  crewBots: CrewBotInstance[]  // hired bots
 
   // Active operations (timed events)
   activeOperation: ActiveOperation | null

@@ -10,7 +10,9 @@ import type {
   PrestigeEnding,
   PrestigePhase,
   PrestigeMeta,
+  CrewBotInstance,
 } from '../types'
+import { ZERO_DAYS, CREW_BOTS, MAX_CREW_BOTS } from '../data/marketItems'
 import { generateWorld, calcPassiveIncome } from '../engine/networkGen'
 import {
   HARDWARE_UPGRADES,
@@ -76,6 +78,13 @@ interface GameActions {
   // Debug
   toggleDebug: () => void
 
+  // Market
+  purchaseZeroDay: (id: string) => boolean
+  useZeroDay: (service: string) => import('../types').ZeroDayItem | null
+  purchaseCrewBot: (botId: string) => boolean
+  fireCrewBot: (instanceId: string) => void
+  updateBotLastAction: (instanceId: string) => void
+
   // Prestige
   triggerEnding: (ending: PrestigeEnding) => void
   setPrestigePhase: (phase: PrestigePhase) => void
@@ -113,6 +122,8 @@ function initialState(): GameState {
     currentPath: '/',
     upgrades: { cpu: 0, ram: 0, nic: 0, logWiper: 0 },
     activeOperation: null,
+    zerodays: [],
+    crewBots: [],
     lines: [],
     commandHistory: [],
     historyIndex: -1,
@@ -311,6 +322,61 @@ export const useGameStore = create<Store>()(
       // ── Debug ─────────────────────────────────────────────────────────────
 
       toggleDebug: () => set((s) => ({ debugOpen: !s.debugOpen })),
+
+      // ── Market ────────────────────────────────────────────────────────────
+
+      purchaseZeroDay: (id) => {
+        const { money, zerodays } = get()
+        const def = ZERO_DAYS.find((z) => z.id === id)
+        if (!def) return false
+        if (money < def.price) return false
+        if (zerodays.some((z) => z.id === id)) return false
+        set((s) => ({
+          money: Math.round((s.money - def.price) * 100) / 100,
+          zerodays: [...s.zerodays, { ...def }],
+        }))
+        return true
+      },
+
+      useZeroDay: (service) => {
+        const { zerodays } = get()
+        const match = zerodays.find((z) => z.targetService === service)
+        if (!match) return null
+        set((s) => ({ zerodays: s.zerodays.filter((z) => z.id !== match.id) }))
+        return match
+      },
+
+      purchaseCrewBot: (botId) => {
+        const { money, crewBots } = get()
+        const def = CREW_BOTS.find((b) => b.id === botId)
+        if (!def) return false
+        if (money < def.price) return false
+        if (crewBots.length >= MAX_CREW_BOTS) return false
+        const instance: CrewBotInstance = {
+          instanceId: nanoid(),
+          botId: def.id,
+          name: def.name,
+          maxTier: def.maxTier,
+          efficiency: def.efficiency,
+          heatPerTick: def.heatPerTick,
+          lastActionAt: 0,
+        }
+        set((s) => ({
+          money: Math.round((s.money - def.price) * 100) / 100,
+          crewBots: [...s.crewBots, instance],
+        }))
+        return true
+      },
+
+      fireCrewBot: (instanceId) =>
+        set((s) => ({ crewBots: s.crewBots.filter((b) => b.instanceId !== instanceId) })),
+
+      updateBotLastAction: (instanceId) =>
+        set((s) => ({
+          crewBots: s.crewBots.map((b) =>
+            b.instanceId === instanceId ? { ...b, lastActionAt: Date.now() } : b
+          ),
+        })),
 
       // ── Prestige ──────────────────────────────────────────────────────────
 
