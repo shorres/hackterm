@@ -6,6 +6,7 @@ import { HUD } from './components/HUD/HUD'
 import { TerminalOutput } from './components/Terminal/TerminalOutput'
 import { TerminalInput } from './components/Terminal/TerminalInput'
 import { PrestigeScreen } from './components/PrestigeScreen'
+import { RunIntroScreen } from './components/RunIntroScreen'
 import { DebugPanel } from './components/DebugPanel'
 import { tick } from './engine/gameLoop'
 
@@ -48,9 +49,11 @@ export default function App() {
   const started = useGameStore((s) => s.started)
   const prestigePhase = useGameStore((s) => s.prestigePhase)
   const endingType = useGameStore((s) => s.endingType)
+  const runIntroActive = useGameStore((s) => s.runIntroActive)
   const lines = useGameStore((s) => s.lines)
   const startGame = useGameStore((s) => s.startGame)
   const printLines = useGameStore((s) => s.printLines)
+  const dismissRunIntro = useGameStore((s) => s.dismissRunIntro)
   const recordEnding = usePrestigeStore((s) => s.recordEnding)
   const getMeta = usePrestigeStore((s) => s.getMeta)
   const money = useGameStore((s) => s.money)
@@ -84,14 +87,16 @@ export default function App() {
   }
 
   const handleNewRun = () => {
+    const lastEnding = endingType ?? undefined
     if (endingType) recordEnding(endingType, money)
-    const meta = getMeta()
-    // recordEnding mutates, so re-read
     const updatedMeta = usePrestigeStore.getState().getMeta()
-    startGame(undefined, updatedMeta)
-    setTimeout(() => {
-      printLines(buildBootMessage(updatedMeta.clearanceLevel, updatedMeta.incomeMultiplier, updatedMeta.retainedMoney, false))
-    }, 50)
+    startGame(undefined, updatedMeta, lastEnding)
+  }
+
+  const handleDismissIntro = () => {
+    dismissRunIntro()
+    const { clearanceLevel, incomeMultiplier, retainedMoney } = usePrestigeStore.getState().getMeta()
+    printLines(buildBootMessage(clearanceLevel, incomeMultiplier, retainedMoney, false))
   }
 
   if (!started) {
@@ -100,6 +105,10 @@ export default function App() {
 
   if (prestigePhase === 'ended') {
     return <PrestigeScreen onNewRun={handleNewRun} />
+  }
+
+  if (runIntroActive) {
+    return <RunIntroScreen onDismiss={handleDismissIntro} />
   }
 
   return (

@@ -30,7 +30,8 @@ const MAX_LINES = 500
 
 interface GameActions {
   // Boot
-  startGame: (seed?: string, meta?: PrestigeMeta) => void
+  startGame: (seed?: string, meta?: PrestigeMeta, lastEnding?: PrestigeEnding) => void
+  dismissRunIntro: () => void
   resetGame: () => void
 
   // Terminal output
@@ -103,6 +104,8 @@ function initialState(): GameState {
     counterHackWarned: false,
     lastHeatAt: 0,
     debugOpen: false,
+    runIntroActive: false,
+    lastEndingType: null,
     nodes: [],
     knownNodeIds: [],
     currentNodeId: null,
@@ -122,14 +125,13 @@ export const useGameStore = create<Store>()(
 
       // ── Boot ──────────────────────────────────────────────────────────────
 
-      startGame: (seed, meta) => {
+      startGame: (seed, meta, lastEnding) => {
         const s = seed ?? Math.random().toString(36).slice(2, 10).toUpperCase()
         const nodes = generateWorld(s)
 
         // Apply prestige meta bonuses
         const startingMoney = 50 + (meta?.retainedMoney ?? 0)
         const startingUpgrades = { cpu: 0, ram: 0, nic: 0, logWiper: 0 }
-        // Clearance level grants one free upgrade per level (cpu first, then ram, nic, logWiper)
         const upgradeOrder: (keyof typeof startingUpgrades)[] = ['cpu', 'ram', 'nic', 'logWiper']
         const clearance = Math.min(meta?.clearanceLevel ?? 0, upgradeOrder.length)
         for (let i = 0; i < clearance; i++) startingUpgrades[upgradeOrder[i]] = 1
@@ -142,8 +144,12 @@ export const useGameStore = create<Store>()(
           money: startingMoney,
           upgrades: startingUpgrades,
           lines: [],
+          runIntroActive: lastEnding !== undefined,
+          lastEndingType: lastEnding ?? null,
         })
       },
+
+      dismissRunIntro: () => set({ runIntroActive: false }),
 
       resetGame: () => set(initialState()),
 

@@ -142,6 +142,8 @@ export interface GameState {
   counterHackWarned: boolean    // true once counter-hack warning was shown
   lastHeatAt: number            // timestamp of last addHeat call; decay only starts after delay
   debugOpen: boolean            // transient UI toggle, not persisted
+  runIntroActive: boolean       // true after prestige restart until player dismisses intro
+  lastEndingType: PrestigeEnding | null  // the ending that triggered this run (not persisted)
 
   // Network
   nodes: GameNode[]

@@ -6,8 +6,8 @@ const HEAT_DECAY_PER_TICK = 0.2
 const HEAT_DECAY_DELAY_MS = 45_000  // heat won't decay until 45s after the last heat event
 const LEGEND_MONEY_THRESHOLD = 25000
 const FBI_CLOSING_DURATION_MS = 30000
-const COUNTER_HACK_CHANCE = 0.003       // 0.3% per tick
-const COUNTER_HACK_MIN_BACKDOORS = 3    // need this many tier-2+ shells to be at risk
+const COUNTER_HACK_BASE_CHANCE = 0.001  // base chance per exposed tier-2+ shell per tick
+const COUNTER_HACK_SLOP_MULT = 3        // dirty-log ratio multiplies chance by up to this
 
 // Called every 1000ms by App
 export function tick() {
@@ -115,18 +115,31 @@ function handleCounterHack() {
   const store = useGameStore.getState()
   if (store.prestigePhase !== 'playing') return
 
-  const tier2Shells = store.nodes.filter((n) => n.backdoored && n.tier >= 2)
-  if (tier2Shells.length < COUNTER_HACK_MIN_BACKDOORS) return
+  const backdoored = store.nodes.filter((n) => n.backdoored)
+  const tier2Shells = backdoored.filter((n) => n.tier >= 2)
+  if (tier2Shells.length === 0) return
 
-  if (!store.counterHackWarned && tier2Shells.length >= COUNTER_HACK_MIN_BACKDOORS) {
+  // Sloppiness = ratio of backdoored nodes with uncleaned logs
+  const dirtyShells = backdoored.filter((n) => !n.logsCleared)
+  const dirtyRatio = dirtyShells.length / backdoored.length
+
+  // Chance scales with exposure and sloppiness
+  const chance = COUNTER_HACK_BASE_CHANCE * tier2Shells.length * (1 + dirtyRatio * COUNTER_HACK_SLOP_MULT)
+
+  if (!store.counterHackWarned) {
     useGameStore.setState({ counterHackWarned: true })
     store.print(``, 'default')
-    store.print(`[~] NOTICE: Anomalous inbound probes on your listener ports.`, 'warning')
-    store.print(`    Someone knows you're here. Watch your back.`, 'warning')
+    if (dirtyRatio > 0.5) {
+      store.print(`[~] NOTICE: Your traces are all over the place.`, 'warning')
+      store.print(`    Dirty logs on active shells. Someone will sniff this out.`, 'warning')
+    } else {
+      store.print(`[~] NOTICE: Anomalous inbound probes on your listener ports.`, 'warning')
+      store.print(`    You're casting a wide net. Someone may be watching.`, 'warning')
+    }
     store.print(``, 'default')
   }
 
-  if (Math.random() < COUNTER_HACK_CHANCE) {
+  if (Math.random() < chance) {
     store.print(``, 'default')
     store.print(`██████████████████████████████████████████████`, 'error')
     store.print(`  YOU'VE BEEN COUNTER-HACKED.`, 'error')
@@ -134,7 +147,6 @@ function handleCounterHack() {
     store.print(`  Everything is gone.`, 'error')
     store.print(`██████████████████████████████████████████████`, 'error')
     store.print(``, 'default')
-    // Small delay so player can read the message before screen changes
     setTimeout(() => store.triggerEnding('counter_hacked'), 3000)
   }
 }
