@@ -106,6 +106,22 @@ export interface ActiveOperation {
   label: string
 }
 
+// ─── Prestige ─────────────────────────────────────────────────────────────────
+
+export type PrestigeEnding = 'fbi' | 'legend' | 'counter_hacked'
+export type PrestigePhase = 'playing' | 'fbi_closing' | 'ended'
+
+export interface PrestigeMeta {
+  totalRuns: number
+  legendRuns: number
+  moleRuns: number
+  counterHackedRuns: number
+  // Stacked bonuses applied at the start of each new run
+  incomeMultiplier: number  // starts 1.0, +0.5 per legend run
+  retainedMoney: number     // flat $ carried over from counter-hacked runs
+  clearanceLevel: number    // mole run count (cap 5), grants free starting upgrades
+}
+
 // ─── Game State ───────────────────────────────────────────────────────────────
 
 export interface GameState {
@@ -116,6 +132,14 @@ export interface GameState {
   // Resources
   money: number
   heat: number // 0–100
+
+  // Prestige phase for this run
+  prestigePhase: PrestigePhase
+  endingType: PrestigeEnding | null
+  legendUnlocked: boolean       // true once money >= $25k
+  fbiClosingAt: number | null   // timestamp FBI countdown started
+  lastHeatBand: number          // 0–4, tracks which threshold messages were printed
+  counterHackWarned: boolean    // true once counter-hack warning was shown
 
   // Network
   nodes: GameNode[]

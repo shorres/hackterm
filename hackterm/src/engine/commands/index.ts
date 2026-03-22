@@ -34,6 +34,7 @@ import { statusCommand } from './status'
 import { upgradeCommand } from './upgrade'
 import { clearCommand } from './clear'
 import { deactivateCommand } from './deactivate'
+import { retireCommand } from './retire'
 
 // ─── Registry ─────────────────────────────────────────────────────────────────
 
@@ -51,6 +52,7 @@ const ALL_COMMANDS: CommandHandler[] = [
   exfiltrateCommand,
   backdoorCommand,
   deactivateCommand,
+  retireCommand,
   clearlogCommand,
   statusCommand,
   upgradeCommand,

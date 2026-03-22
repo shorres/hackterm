@@ -7,6 +7,9 @@ import type {
   TerminalLine,
   OutputType,
   ActiveOperation,
+  PrestigeEnding,
+  PrestigePhase,
+  PrestigeMeta,
 } from '../types'
 import { generateWorld, calcPassiveIncome } from '../engine/networkGen'
 import {
@@ -27,7 +30,7 @@ const MAX_LINES = 500
 
 interface GameActions {
   // Boot
-  startGame: (seed?: string) => void
+  startGame: (seed?: string, meta?: PrestigeMeta) => void
   resetGame: () => void
 
   // Terminal output
@@ -69,6 +72,10 @@ interface GameActions {
   // Log state
   dirtyNodeLogs: (nodeId: string) => void
 
+  // Prestige
+  triggerEnding: (ending: PrestigeEnding) => void
+  setPrestigePhase: (phase: PrestigePhase) => void
+
   // Computed helpers
   getNode: (id: string) => GameNode | undefined
   getCurrentNode: () => GameNode | undefined
@@ -85,6 +92,12 @@ function initialState(): GameState {
     started: false,
     money: 0,
     heat: 0,
+    prestigePhase: 'playing',
+    endingType: null,
+    legendUnlocked: false,
+    fbiClosingAt: null,
+    lastHeatBand: 0,
+    counterHackWarned: false,
     nodes: [],
     knownNodeIds: [],
     currentNodeId: null,
@@ -104,15 +117,25 @@ export const useGameStore = create<Store>()(
 
       // ── Boot ──────────────────────────────────────────────────────────────
 
-      startGame: (seed) => {
+      startGame: (seed, meta) => {
         const s = seed ?? Math.random().toString(36).slice(2, 10).toUpperCase()
         const nodes = generateWorld(s)
+
+        // Apply prestige meta bonuses
+        const startingMoney = 50 + (meta?.retainedMoney ?? 0)
+        const startingUpgrades = { cpu: 0, ram: 0, nic: 0, logWiper: 0 }
+        // Clearance level grants one free upgrade per level (cpu first, then ram, nic, logWiper)
+        const upgradeOrder: (keyof typeof startingUpgrades)[] = ['cpu', 'ram', 'nic', 'logWiper']
+        const clearance = Math.min(meta?.clearanceLevel ?? 0, upgradeOrder.length)
+        for (let i = 0; i < clearance; i++) startingUpgrades[upgradeOrder[i]] = 1
+
         set({
           ...initialState(),
           seed: s,
           started: true,
           nodes,
-          money: 50, // starting cash
+          money: startingMoney,
+          upgrades: startingUpgrades,
           lines: [],
         })
       },
@@ -273,6 +296,13 @@ export const useGameStore = create<Store>()(
         }
       },
 
+      // ── Prestige ──────────────────────────────────────────────────────────
+
+      triggerEnding: (ending) =>
+        set({ endingType: ending, prestigePhase: 'ended', activeOperation: null }),
+
+      setPrestigePhase: (phase) => set({ prestigePhase: phase }),
+
       // ── Computed helpers ──────────────────────────────────────────────────
 
       getNode: (id) => get().nodes.find((n) => n.id === id),
@@ -299,6 +329,12 @@ export const useGameStore = create<Store>()(
         started: s.started,
         money: s.money,
         heat: s.heat,
+        prestigePhase: s.prestigePhase,
+        endingType: s.endingType,
+        legendUnlocked: s.legendUnlocked,
+        fbiClosingAt: s.fbiClosingAt,
+        lastHeatBand: s.lastHeatBand,
+        counterHackWarned: s.counterHackWarned,
         nodes: s.nodes,
         knownNodeIds: s.knownNodeIds,
         currentNodeId: s.currentNodeId,
