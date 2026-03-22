@@ -1,0 +1,136 @@
+// ─── Filesystem ──────────────────────────────────────────────────────────────
+
+export interface FSFile {
+  type: 'file'
+  name: string
+  content: string
+  value?: number // if exfiltrable, how much $$ it's worth
+  hidden?: boolean
+}
+
+export interface FSDir {
+  type: 'dir'
+  name: string
+  children: FSNode[]
+  hidden?: boolean
+}
+
+export type FSNode = FSFile | FSDir
+
+// ─── Network ─────────────────────────────────────────────────────────────────
+
+export interface Port {
+  number: number
+  service: string
+  version: string
+}
+
+export interface Vulnerability {
+  id: string
+  name: string
+  description: string
+  port: number
+  service: string
+  difficulty: number // 1–10, affects exploit time
+  requiresTool?: string // optional: needs a specific upgrade
+}
+
+export type NodeType =
+  | 'home_router'
+  | 'iot_camera'
+  | 'iot_thermostat'
+  | 'smart_tv'
+  | 'home_pc'
+  | 'small_server'
+  | 'nas_device'
+  | 'corporate_server'
+  | 'database_server'
+  | 'web_server'
+
+export interface GameNode {
+  id: string
+  ip: string
+  mac: string
+  hostname: string
+  type: NodeType
+  tier: number // 1–3 for v0
+  os: string
+  openPorts: Port[]
+  vulnerabilities: Vulnerability[]
+  filesystem: FSDir
+  baseIncome: number // $/sec when backdoored
+  incomeMultiplier: number
+  heatOnBreach: number // heat added when first exploited
+  compromised: boolean
+  backdoored: boolean
+  logsCleared: boolean
+}
+
+// ─── Player ──────────────────────────────────────────────────────────────────
+
+export interface HardwareUpgrades {
+  cpu: number        // 1–5, multiplies passive income & speeds exploits
+  ram: number        // 1–5, max concurrent backdoors
+  nic: number        // 1–5, nmap scan range
+  logWiper: number   // 0–5, multiplies heat reduction from clearlog (software upgrade)
+}
+
+// ─── Terminal Output ──────────────────────────────────────────────────────────
+
+export type OutputType =
+  | 'default'
+  | 'success'
+  | 'error'
+  | 'warning'
+  | 'info'
+  | 'system'
+  | 'prompt'
+  | 'data'
+  | 'progress'
+
+export interface TerminalLine {
+  id: string
+  text: string
+  type: OutputType
+  timestamp: number
+}
+
+// ─── Active Operation ────────────────────────────────────────────────────────
+
+export interface ActiveOperation {
+  type: 'exploit' | 'backdoor' | 'exfiltrate' | 'clearlog'
+  targetId: string
+  vulnId?: string
+  startedAt: number
+  durationMs: number
+  label: string
+}
+
+// ─── Game State ───────────────────────────────────────────────────────────────
+
+export interface GameState {
+  // Meta
+  seed: string
+  started: boolean
+
+  // Resources
+  money: number
+  heat: number // 0–100
+
+  // Network
+  nodes: GameNode[]
+  knownNodeIds: string[] // discovered via nmap
+  currentNodeId: string | null // shell is open here
+  currentPath: string // path within currentNode's filesystem
+
+  // Player hardware
+  upgrades: HardwareUpgrades
+
+  // Active operations (timed events)
+  activeOperation: ActiveOperation | null
+
+  // Terminal
+  lines: TerminalLine[]
+  commandHistory: string[]
+  historyIndex: number
+}
