@@ -33,13 +33,15 @@ export function HUD() {
   const backdooredCount = getBackdooredNodes().length
   const maxBd = getMaxBackdoors()
   const income = getPassiveIncome()
-
+  
+  const safeHeat = Number.isFinite(heat) ? heat : 0
   const heatColor =
-    heat < 20 ? 'text-terminal-green' :
-    heat < 50 ? 'text-terminal-orange' :
+    safeHeat < 20 ? 'text-terminal-green' :
+    safeHeat < 50 ? 'text-terminal-orange' :
     'text-terminal-red'
 
-  const heatBarFill = Math.floor(heat / 5)
+  
+  const heatBarFill = Math.floor(safeHeat / 5)
 
   return (
     <div className="bg-terminal-surface border-b border-terminal-border px-4 py-2 flex items-center gap-6 font-mono text-sm shrink-0 flex-wrap">
@@ -62,7 +64,7 @@ export function HUD() {
       <div className="flex items-center gap-2">
         <span className="text-terminal-gray">HEAT</span>
         <span className={`font-bold tabular-nums ${heatColor}`}>
-          {heat.toFixed(0)}%
+          {safeHeat.toFixed(0)}%
         </span>
         <span className="text-xs">
           <span className={heatColor}>{'█'.repeat(heatBarFill)}</span>

@@ -311,8 +311,16 @@ export const useGameStore = create<Store>()(
         return {
           ...current,
           ...p,
+          // Sanitize numeric fields — corrupted saves (NaN, Infinity) fall back to initial values
+          money: Number.isFinite(p.money) ? p.money! : current.money,
+          heat: Number.isFinite(p.heat) ? p.heat! : current.heat,
           // Always fill in any upgrade fields added after the save was created
-          upgrades: { ...current.upgrades, ...p.upgrades },
+          upgrades: {
+            ...current.upgrades,
+            ...Object.fromEntries(
+              Object.entries(p.upgrades ?? {}).map(([k, v]) => [k, Number.isFinite(v) ? v : 0])
+            ),
+          },
         }
       },
     }
