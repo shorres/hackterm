@@ -72,6 +72,9 @@ interface GameActions {
   // Log state
   dirtyNodeLogs: (nodeId: string) => void
 
+  // Debug
+  toggleDebug: () => void
+
   // Prestige
   triggerEnding: (ending: PrestigeEnding) => void
   setPrestigePhase: (phase: PrestigePhase) => void
@@ -98,6 +101,8 @@ function initialState(): GameState {
     fbiClosingAt: null,
     lastHeatBand: 0,
     counterHackWarned: false,
+    lastHeatAt: 0,
+    debugOpen: false,
     nodes: [],
     knownNodeIds: [],
     currentNodeId: null,
@@ -241,7 +246,7 @@ export const useGameStore = create<Store>()(
         set((s) => ({ money: Math.round((s.money + amount) * 100) / 100 })),
 
       addHeat: (amount) =>
-        set((s) => ({ heat: Math.min(100, s.heat + amount) })),
+        set((s) => ({ heat: Math.min(100, s.heat + amount), lastHeatAt: Date.now() })),
 
       reduceHeat: (amount) =>
         set((s) => ({ heat: Math.max(0, s.heat - amount) })),
@@ -295,6 +300,10 @@ export const useGameStore = create<Store>()(
           }))
         }
       },
+
+      // ── Debug ─────────────────────────────────────────────────────────────
+
+      toggleDebug: () => set((s) => ({ debugOpen: !s.debugOpen })),
 
       // ── Prestige ──────────────────────────────────────────────────────────
 

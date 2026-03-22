@@ -3,6 +3,7 @@ import type { ActiveOperation } from '../types'
 import { getClearlogMultiplier } from '../data/upgrades'
 
 const HEAT_DECAY_PER_TICK = 0.2
+const HEAT_DECAY_DELAY_MS = 45_000  // heat won't decay until 45s after the last heat event
 const LEGEND_MONEY_THRESHOLD = 25000
 const FBI_CLOSING_DURATION_MS = 30000
 const COUNTER_HACK_CHANCE = 0.003       // 0.3% per tick
@@ -16,8 +17,9 @@ export function tick() {
   // 1. Passive income
   store.tickIncome()
 
-  // 2. Passive heat decay (idle play slowly cools you down)
-  if (store.heat > 0) {
+  // 2. Passive heat decay — only kicks in after 45s of no heat-generating activity
+  const heatIdle = store.lastHeatAt === 0 || (Date.now() - store.lastHeatAt) > HEAT_DECAY_DELAY_MS
+  if (store.heat > 0 && heatIdle) {
     store.reduceHeat(HEAT_DECAY_PER_TICK)
   }
 

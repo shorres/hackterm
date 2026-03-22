@@ -6,6 +6,7 @@ import { HUD } from './components/HUD/HUD'
 import { TerminalOutput } from './components/Terminal/TerminalOutput'
 import { TerminalInput } from './components/Terminal/TerminalInput'
 import { PrestigeScreen } from './components/PrestigeScreen'
+import { DebugPanel } from './components/DebugPanel'
 import { tick } from './engine/gameLoop'
 
 function buildBootMessage(
@@ -114,6 +115,7 @@ export default function App() {
       <HUD />
       <TerminalOutput lines={lines} />
       <TerminalInput />
+      <DebugPanel />
     </div>
   )
 }

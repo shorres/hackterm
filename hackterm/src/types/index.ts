@@ -140,6 +140,8 @@ export interface GameState {
   fbiClosingAt: number | null   // timestamp FBI countdown started
   lastHeatBand: number          // 0–4, tracks which threshold messages were printed
   counterHackWarned: boolean    // true once counter-hack warning was shown
+  lastHeatAt: number            // timestamp of last addHeat call; decay only starts after delay
+  debugOpen: boolean            // transient UI toggle, not persisted
 
   // Network
   nodes: GameNode[]

@@ -60,8 +60,13 @@ interface Props {
 export function PrestigeScreen({ onNewRun }: Props) {
   const endingType = useGameStore((s) => s.endingType)
   const money = useGameStore((s) => s.money)
-  const meta = usePrestigeStore((s) => s.getMeta())
   const totalRuns = usePrestigeStore((s) => s.totalRuns)
+  const legendRuns = usePrestigeStore((s) => s.legendRuns)
+  const moleRuns = usePrestigeStore((s) => s.moleRuns)
+  const counterHackedRuns = usePrestigeStore((s) => s.counterHackedRuns)
+  const incomeMultiplier = usePrestigeStore((s) => s.incomeMultiplier)
+  const retainedMoney = usePrestigeStore((s) => s.retainedMoney)
+  const clearanceLevel = usePrestigeStore((s) => s.clearanceLevel)
 
   if (!endingType) return null
   const ending = ENDINGS[endingType]
@@ -99,15 +104,15 @@ export function PrestigeScreen({ onNewRun }: Props) {
           </div>
           <div className="flex justify-between">
             <span className="text-terminal-gray">Legend exits</span>
-            <span className="text-terminal-gold">{endingType === 'legend' ? meta.legendRuns + 1 : meta.legendRuns}</span>
+            <span className="text-terminal-gold">{endingType === 'legend' ? legendRuns + 1 : legendRuns}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-terminal-gray">Mole runs</span>
-            <span className="text-terminal-cyan">{endingType === 'fbi' ? meta.moleRuns + 1 : meta.moleRuns}</span>
+            <span className="text-terminal-cyan">{endingType === 'fbi' ? moleRuns + 1 : moleRuns}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-terminal-gray">Burned runs</span>
-            <span className="text-terminal-orange">{endingType === 'counter_hacked' ? meta.counterHackedRuns + 1 : meta.counterHackedRuns}</span>
+            <span className="text-terminal-orange">{endingType === 'counter_hacked' ? counterHackedRuns + 1 : counterHackedRuns}</span>
           </div>
         </div>
 
@@ -119,14 +124,14 @@ export function PrestigeScreen({ onNewRun }: Props) {
         </div>
 
         {/* Next run bonuses preview */}
-        {(meta.incomeMultiplier > 1 || meta.retainedMoney > 0 || meta.clearanceLevel > 0) && (
+        {(incomeMultiplier > 1 || retainedMoney > 0 || clearanceLevel > 0) && (
           <div className="text-xs text-terminal-gray space-y-1">
             <div className="tracking-widest mb-1">CARRYING INTO NEXT RUN</div>
-            {meta.incomeMultiplier > 1 && (
-              <div>Income multiplier: <span className="text-terminal-gold">×{(endingType === 'legend' ? meta.incomeMultiplier + 0.5 : meta.incomeMultiplier).toFixed(1)}</span></div>
+            {incomeMultiplier > 1 && (
+              <div>Income multiplier: <span className="text-terminal-gold">×{(endingType === 'legend' ? incomeMultiplier + 0.5 : incomeMultiplier).toFixed(1)}</span></div>
             )}
-            {meta.clearanceLevel > 0 && (
-              <div>Clearance level: <span className="text-terminal-cyan">{endingType === 'fbi' ? meta.clearanceLevel + 1 : meta.clearanceLevel}</span></div>
+            {clearanceLevel > 0 && (
+              <div>Clearance level: <span className="text-terminal-cyan">{endingType === 'fbi' ? clearanceLevel + 1 : clearanceLevel}</span></div>
             )}
             {endingType === 'counter_hacked' && money > 0 && (
               <div>Retained funds: <span className="text-terminal-orange">${(money * 0.15).toFixed(2)}</span></div>
