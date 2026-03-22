@@ -141,6 +141,7 @@ export interface GameState {
   lastHeatBand: number          // 0–4, tracks which threshold messages were printed
   counterHackWarned: boolean    // true once counter-hack warning was shown
   lastHeatAt: number            // timestamp of last addHeat call; decay only starts after delay
+  lastFbiEventAt: number        // timestamp of last periodic FBI pressure/action event
   debugOpen: boolean            // transient UI toggle, not persisted
   runIntroActive: boolean       // true after prestige restart until player dismisses intro
   lastEndingType: PrestigeEnding | null  // the ending that triggered this run (not persisted)

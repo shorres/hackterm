@@ -2,14 +2,63 @@ import { useGameStore } from '../store/gameStore'
 import type { ActiveOperation } from '../types'
 import { getClearlogMultiplier } from '../data/upgrades'
 
-const HEAT_DECAY_PER_TICK = 0.2
-const HEAT_DECAY_DELAY_MS = 45_000  // heat won't decay until 45s after the last heat event
-const LEGEND_MONEY_THRESHOLD = 25000
-const FBI_CLOSING_DURATION_MS = 30000
-const COUNTER_HACK_BASE_CHANCE = 0.001  // base chance per exposed tier-2+ shell per tick
-const COUNTER_HACK_SLOP_MULT = 3        // dirty-log ratio multiplies chance by up to this
+// ─── Constants ────────────────────────────────────────────────────────────────
 
-// Called every 1000ms by App
+// Heat decay
+const DECAY_RATE_DISCONNECTED = 0.5   // per tick when not connected and idle
+const DECAY_RATE_CONNECTED    = 0.2   // per tick when connected but idle
+const DECAY_DELAY_DISCONNECTED = 30_000
+const DECAY_DELAY_CONNECTED    = 45_000
+const DECAY_CRITICAL_MULT      = 0.5  // at 90%+ heat, decay is half as effective
+
+// Prestige thresholds
+const LEGEND_MONEY_THRESHOLD  = 25000
+const FBI_CLOSING_DURATION_MS = 30000
+
+// FBI escalation
+const FBI_MONITOR_INTERVAL_MS = 75_000  // band-2 pressure message every 75s
+const FBI_RAID_INTERVAL_MS    = 60_000  // band-3 action (+ disconnect) every 60s
+
+// Counter-hack
+const COUNTER_HACK_BASE_CHANCE = 0.001
+const COUNTER_HACK_SLOP_MULT   = 3
+
+// Countdown seconds to announce (module-level to avoid state overhead)
+const COUNTDOWN_BEATS = new Set([25, 20, 15, 10, 5, 4, 3, 2, 1])
+let lastCountdownSecond = -1
+
+// ─── FBI message pools ────────────────────────────────────────────────────────
+
+const FBI_MONITOR_MESSAGES = [
+  [`[FBI_TRX] Correlation sweep active on flagged subnet.`,
+   `           Traffic signature match: ${() => Math.floor(55 + Math.random() * 30)}% confidence.`],
+  [`[FBI_TRX] FISA warrant submitted for ISP log disclosure.`,
+   `           Awaiting judicial approval. Monitoring continues.`],
+  [`[FBI_TRX] Deep packet inspection enabled on egress routes.`,
+   `           Behavioral pattern analysis running.`],
+  [`[FBI_TRX] Subpoena issued to hosting provider.`,
+   `           Historical session data requested.`],
+  [`[FBI_TRX] Geo-correlation sweep in progress.`,
+   `           Narrowing origin range. Stand by.`],
+]
+
+const FBI_RAID_MESSAGES = [
+  [`[FBI_RAID] Physical address narrowed to a 3-block radius.`,
+   `           Tactical unit on standby.`],
+  [`[FBI_RAID] ISP subpoena executed. Full session logs obtained.`,
+   `           You have been positively identified.`],
+  [`[FBI_RAID] Remote session forcibly terminated.`,
+   `           They know which node you were on.`],
+  [`[FBI_RAID] Network tap installed upstream of your connection.`,
+   `           All traffic now mirrored to federal servers.`],
+]
+
+function pickRandom<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)]
+}
+
+// ─── Main tick ────────────────────────────────────────────────────────────────
+
 export function tick() {
   const store = useGameStore.getState()
   if (!store.started || store.prestigePhase === 'ended') return
@@ -17,19 +66,16 @@ export function tick() {
   // 1. Passive income
   store.tickIncome()
 
-  // 2. Passive heat decay — only kicks in after 45s of no heat-generating activity
-  const heatIdle = store.lastHeatAt === 0 || (Date.now() - store.lastHeatAt) > HEAT_DECAY_DELAY_MS
-  if (store.heat > 0 && heatIdle) {
-    store.reduceHeat(HEAT_DECAY_PER_TICK)
-  }
+  // 2. Heat decay
+  handleHeatDecay()
 
-  // 3. Check active operation completion
+  // 3. Active operation completion
   const { completed, operation } = store.tickOperation()
   if (completed && operation) {
     handleOperationComplete(operation)
   }
 
-  // 4. Heat threshold events + FBI logic
+  // 4. Heat threshold messages + FBI escalation
   handleHeatEvents()
 
   // 5. Legend unlock check
@@ -39,16 +85,36 @@ export function tick() {
   handleCounterHack()
 }
 
-// ─── Heat Events ─────────────────────────────────────────────────────────────
+// ─── Heat Decay ───────────────────────────────────────────────────────────────
+
+function handleHeatDecay() {
+  const store = useGameStore.getState()
+  if (store.heat <= 0) return
+
+  const isConnected = store.currentNodeId !== null
+  const delay = isConnected ? DECAY_DELAY_CONNECTED : DECAY_DELAY_DISCONNECTED
+  const baseRate = isConnected ? DECAY_RATE_CONNECTED : DECAY_RATE_DISCONNECTED
+
+  const idle = store.lastHeatAt === 0 || (Date.now() - store.lastHeatAt) > delay
+  if (!idle) return
+
+  // Critical heat (90%+) decays at half speed — hard to cool off once it's there
+  const rate = store.heat >= 90 ? baseRate * DECAY_CRITICAL_MULT : baseRate
+  store.reduceHeat(rate)
+}
+
+// ─── Heat Threshold Events + FBI Escalation ───────────────────────────────────
 
 function handleHeatEvents() {
   const store = useGameStore.getState()
-  const { heat, lastHeatBand, prestigePhase, fbiClosingAt, print } = store
+  const { heat, lastHeatBand, prestigePhase, fbiClosingAt, lastFbiEventAt, print } = store
 
   if (prestigePhase === 'ended') return
 
-  // Band 0 = <50, 1 = 50+, 2 = 75+, 3 = 90+, 4 = 100
+  // Band 0=<50, 1=50+, 2=75+, 3=90+, 4=100
   const band = heat >= 100 ? 4 : heat >= 90 ? 3 : heat >= 75 ? 2 : heat >= 50 ? 1 : 0
+
+  // ── One-time threshold messages ──────────────────────────────────────────
 
   if (band > lastHeatBand) {
     useGameStore.setState({ lastHeatBand: band })
@@ -69,7 +135,7 @@ function handleHeatEvents() {
       print(`      Disconnect all sessions. Clear all logs. Go dark NOW.`, 'error')
       print(``, 'default')
     } else if (band === 4 && prestigePhase === 'playing') {
-      // FBI closing in — start 30s countdown
+      lastCountdownSecond = -1
       useGameStore.setState({ prestigePhase: 'fbi_closing', fbiClosingAt: Date.now() })
       print(``, 'default')
       print(`████████████████████████████████████████`, 'error')
@@ -80,15 +146,62 @@ function handleHeatEvents() {
     }
   }
 
-  // Tick the FBI closing countdown
+  // ── Periodic FBI pressure (band 2: 75–89%) ───────────────────────────────
+
+  if (band === 2 && prestigePhase === 'playing') {
+    const sinceLast = Date.now() - lastFbiEventAt
+    if (lastFbiEventAt === 0 || sinceLast > FBI_MONITOR_INTERVAL_MS) {
+      useGameStore.setState({ lastFbiEventAt: Date.now() })
+      const [line1, line2raw] = pickRandom(FBI_MONITOR_MESSAGES)
+      // line2 may be a function (for dynamic confidence %)
+      const line2 = typeof line2raw === 'function' ? line2raw() : line2raw
+      print(``, 'default')
+      print(line1, 'warning')
+      print(line2, 'warning')
+      print(``, 'default')
+    }
+  }
+
+  // ── FBI active raids (band 3: 90–99%) ────────────────────────────────────
+
+  if (band === 3 && prestigePhase === 'playing') {
+    const sinceLast = Date.now() - lastFbiEventAt
+    if (lastFbiEventAt === 0 || sinceLast > FBI_RAID_INTERVAL_MS) {
+      useGameStore.setState({ lastFbiEventAt: Date.now() })
+      const [line1, line2] = pickRandom(FBI_RAID_MESSAGES)
+      print(``, 'default')
+      print(line1, 'error')
+      print(line2, 'error')
+
+      // If player is connected, forcibly disconnect them
+      const currentNode = useGameStore.getState().getCurrentNode()
+      if (currentNode) {
+        print(`[FBI_RAID] >> Connection to ${currentNode.hostname} terminated by remote intercept <<`, 'error')
+        useGameStore.getState().setCurrentNode(null)
+        if (useGameStore.getState().activeOperation) {
+          useGameStore.getState().completeOperation()
+          print(`[FBI_RAID] Active operation aborted.`, 'error')
+        }
+      }
+      print(``, 'default')
+    }
+  }
+
+  // ── FBI closing countdown ─────────────────────────────────────────────────
+
   if (prestigePhase === 'fbi_closing' && fbiClosingAt !== null) {
     const elapsed = Date.now() - fbiClosingAt
     const remaining = Math.ceil((FBI_CLOSING_DURATION_MS - elapsed) / 1000)
 
     if (elapsed >= FBI_CLOSING_DURATION_MS) {
       store.triggerEnding('fbi')
-    } else if (remaining <= 10 && remaining % 5 === 0) {
-      print(`[FBI] ${remaining} seconds...`, 'error')
+    } else if (COUNTDOWN_BEATS.has(remaining) && remaining !== lastCountdownSecond) {
+      lastCountdownSecond = remaining
+      if (remaining <= 5) {
+        print(`[FBI] ${remaining}...`, 'error')
+      } else {
+        print(`[FBI] ${remaining} seconds remaining.`, 'error')
+      }
     }
   }
 }
@@ -119,11 +232,8 @@ function handleCounterHack() {
   const tier2Shells = backdoored.filter((n) => n.tier >= 2)
   if (tier2Shells.length === 0) return
 
-  // Sloppiness = ratio of backdoored nodes with uncleaned logs
   const dirtyShells = backdoored.filter((n) => !n.logsCleared)
   const dirtyRatio = dirtyShells.length / backdoored.length
-
-  // Chance scales with exposure and sloppiness
   const chance = COUNTER_HACK_BASE_CHANCE * tier2Shells.length * (1 + dirtyRatio * COUNTER_HACK_SLOP_MULT)
 
   if (!store.counterHackWarned) {
