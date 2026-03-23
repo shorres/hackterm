@@ -35,9 +35,9 @@ export const nmapCommand: CommandHandler = {
       return
     }
 
-    // Find all nodes on this subnet
+    // Find all nodes on this subnet — ephemeral nodes are not nmap-visible
     const subnetPrefix = `10.0.${requestedSubnet}.`
-    const subnetNodes = store.nodes.filter((n) => n.ip.startsWith(subnetPrefix))
+    const subnetNodes = store.nodes.filter((n) => n.ip.startsWith(subnetPrefix) && !n.ephemeral)
 
     if (subnetNodes.length === 0) {
       print(`nmap: No hosts found on ${target}`, 'warning')

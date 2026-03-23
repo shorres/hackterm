@@ -36,5 +36,9 @@ export const catCommand: CommandHandler = {
     for (const line of content.split('\n')) {
       print(line, 'data')
     }
+
+    if (fsNode.discoveryNodeId) {
+      store.revealEphemeralNode(fsNode.discoveryNodeId)
+    }
   },
 }

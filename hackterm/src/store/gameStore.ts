@@ -69,6 +69,9 @@ interface GameActions {
   // Passive income tick
   tickIncome: () => void
 
+  // Discovery
+  revealEphemeralNode: (nodeId: string) => void
+
   // Backdoor management
   deactivateBackdoor: (nodeId: string) => void
 
@@ -257,6 +260,19 @@ export const useGameStore = create<Store>()(
             n.id === nodeId ? { ...n, logsCleared: false } : n
           ),
         })),
+
+      revealEphemeralNode: (nodeId) => {
+        const { nodes, knownNodeIds, print } = get()
+        if (knownNodeIds.includes(nodeId)) return
+        const node = nodes.find((n) => n.id === nodeId)
+        if (!node) return
+        set((s) => ({ knownNodeIds: [...s.knownNodeIds, nodeId] }))
+        print(``, 'default')
+        print(`[!] DISCOVERY — hidden node signature detected in file`, 'success')
+        print(`    Host: ${node.ip}  (${node.hostname})`, 'info')
+        print(`    Run 'probe ${node.ip}' to enumerate it`, 'info')
+        print(``, 'default')
+      },
 
       // ── Money & heat ──────────────────────────────────────────────────────
 
