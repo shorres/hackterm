@@ -24,6 +24,12 @@ const FBI_RAID_INTERVAL_MS    = 60_000  // band-3 action (+ disconnect) every 60
 const COUNTER_HACK_BASE_CHANCE = 0.001
 const COUNTER_HACK_SLOP_MULT   = 3
 
+// Admin patch events
+const PATCH_CHANCE_T2      = 0.0015  // per tick, clean logs
+const PATCH_CHANCE_T3      = 0.0030  // per tick, clean logs
+const PATCH_DIRTY_MULT     = 3       // dirty logs multiply chance
+const PATCH_COOLDOWN_MS    = 180_000 // 3 min minimum between patches on same node
+
 // Countdown seconds to announce (module-level to avoid state overhead)
 const COUNTDOWN_BEATS = new Set([25, 20, 15, 10, 5, 4, 3, 2, 1])
 let lastCountdownSecond = -1
@@ -87,6 +93,9 @@ export function tick() {
 
   // 7. Crew bot actions
   handleCrewBots()
+
+  // 8. Admin patch events
+  handleAdminPatches()
 }
 
 // ─── Heat Decay ───────────────────────────────────────────────────────────────
@@ -317,6 +326,67 @@ function handleOperationComplete(op: ActiveOperation) {
       print(`[+] Heat reduced by ${heatRemoved}`, 'success')
       break
     }
+  }
+}
+
+// ─── Admin Patch Events ───────────────────────────────────────────────────────
+
+const PATCH_MESSAGES_T2 = [
+  'Security scan detected unauthorized process. Access revoked.',
+  'Owner updated firmware and rotated credentials.',
+  'Intrusion detection flagged your listener. Backdoor removed.',
+  'Scheduled maintenance wiped your shell. Node re-secured.',
+]
+
+const PATCH_MESSAGES_T3 = [
+  'SECURITY TEAM — Anomalous outbound traffic traced to unauthorized process. Session terminated.',
+  'INCIDENT RESPONSE — Unauthorized persistence mechanism removed. Node hardened.',
+  'THREAT INTEL — IOC match on your listener signature. Automated remediation executed.',
+  'SOC ALERT — Endpoint detection flagged your backdoor. Access revoked and escalated.',
+]
+
+function handleAdminPatches() {
+  const store = useGameStore.getState()
+  if (store.prestigePhase !== 'playing') return
+
+  const now = Date.now()
+  const candidates = store.nodes.filter(
+    (n) => n.tier >= 2 && n.compromised && !n.ephemeral
+  )
+
+  for (const node of candidates) {
+    // Enforce cooldown per node
+    if (node.lastPatchedAt && now - node.lastPatchedAt < PATCH_COOLDOWN_MS) continue
+
+    const base  = node.tier >= 3 ? PATCH_CHANCE_T3 : PATCH_CHANCE_T2
+    const mult  = node.logsCleared ? 1 : PATCH_DIRTY_MULT
+    const chance = base * mult
+
+    if (Math.random() > chance) continue
+
+    const isConnected = store.currentNodeId === node.id
+    const pool = node.tier >= 3 ? PATCH_MESSAGES_T3 : PATCH_MESSAGES_T2
+    const msg  = pickRandom(pool)
+
+    store.print(``, 'default')
+    store.print(`[!] PATCH EVENT — ${node.hostname} (${node.ip})`, 'warning')
+    store.print(`    ${msg}`, 'warning')
+
+    if (node.patchLevel && node.patchLevel >= 1) {
+      store.print(`    Security hardened — breach heat now elevated (patch level ${(node.patchLevel ?? 0) + 1})`, 'warning')
+    }
+
+    if (isConnected) {
+      store.print(`    >> Your session was active. Connection forcibly terminated. <<`, 'error')
+      store.setCurrentNode(null)
+      if (store.activeOperation) {
+        store.completeOperation()
+        store.print(`    Active operation aborted.`, 'error')
+      }
+    }
+
+    store.print(``, 'default')
+    store.patchNode(node.id)
   }
 }
 
