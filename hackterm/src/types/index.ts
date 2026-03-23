@@ -66,7 +66,9 @@ export interface GameNode {
   compromised: boolean
   backdoored: boolean
   logsCleared: boolean
-  ephemeral?: boolean // hidden node — not shown by nmap until discovered via lore
+  ephemeral?: boolean   // hidden node — not shown by nmap until discovered via lore
+  patchLevel?: number   // increments each time node is patched; raises heatOnBreach 30% per level
+  lastPatchedAt?: number // timestamp of last admin patch event; enforces cooldown
 }
 
 // ─── Player ──────────────────────────────────────────────────────────────────

@@ -74,6 +74,7 @@ interface GameActions {
 
   // Backdoor management
   deactivateBackdoor: (nodeId: string) => void
+  patchNode: (nodeId: string) => void
 
   // Log state
   dirtyNodeLogs: (nodeId: string) => void
@@ -252,6 +253,24 @@ export const useGameStore = create<Store>()(
           nodes: s.nodes.map((n) =>
             n.id === nodeId ? { ...n, backdoored: false } : n
           ),
+        })),
+
+      patchNode: (nodeId) =>
+        set((s) => ({
+          nodes: s.nodes.map((n) => {
+            if (n.id !== nodeId) return n
+            const newLevel = (n.patchLevel ?? 0) + 1
+            return {
+              ...n,
+              compromised: false,
+              backdoored: false,
+              logsCleared: false,
+              patchLevel: newLevel,
+              lastPatchedAt: Date.now(),
+              // Each patch raises breach heat by 30% — re-exploiting gets riskier
+              heatOnBreach: Math.round(n.heatOnBreach * 1.3),
+            }
+          }),
         })),
 
       dirtyNodeLogs: (nodeId) =>

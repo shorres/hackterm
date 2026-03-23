@@ -35,6 +35,9 @@ export const probeCommand: CommandHandler = {
     print(`│  Type      : ${node.type.replace(/_/g, ' ').toUpperCase()}`, 'default')
     print(`│  Security  : ${tierLabel(node.tier)}`, node.tier === 1 ? 'success' : node.tier === 2 ? 'warning' : 'error')
     print(`│  Status    : ${node.compromised ? '** COMPROMISED **' : 'secure'}`, node.compromised ? 'warning' : 'default')
+    if ((node.patchLevel ?? 0) > 0) {
+      print(`│  Patched   : ${node.patchLevel}x  (breach heat: ${node.heatOnBreach} — hardened)`, 'error')
+    }
     print(`└───────────────────────────────────────────────┘`, 'info')
     print('', 'default')
 
