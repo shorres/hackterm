@@ -6,6 +6,7 @@ export interface FSFile {
   content: string
   value?: number // if exfiltrable, how much $$ it's worth
   hidden?: boolean
+  discoveryNodeId?: string // if set, catting this file reveals a hidden ephemeral node
 }
 
 export interface FSDir {
@@ -65,6 +66,7 @@ export interface GameNode {
   compromised: boolean
   backdoored: boolean
   logsCleared: boolean
+  ephemeral?: boolean // hidden node — not shown by nmap until discovered via lore
 }
 
 // ─── Player ──────────────────────────────────────────────────────────────────
