@@ -273,12 +273,14 @@ function handleOperationComplete(op: ActiveOperation) {
 
   switch (op.type) {
     case 'exploit': {
+      const heatMult = op.heatMultiplier ?? 1.0
+      const heatAdded = Math.round(node.heatOnBreach * heatMult)
       store.compromiseNode(op.targetId)
-      store.addHeat(node.heatOnBreach)
+      store.addHeat(heatAdded)
       print(``, 'default')
       print(`[+] EXPLOIT SUCCESS — shell obtained on ${node.hostname} (${node.ip})`, 'success')
       print(`[+] Root access confirmed.`, 'success')
-      print(`[!] Heat increased by ${node.heatOnBreach}`, 'warning')
+      print(`[!] Heat +${heatAdded}${heatMult !== 1.0 ? ` (x${heatMult} modifier)` : ''}`, 'warning')
       print(``, 'default')
       print(`    → connect ${node.ip}  to open a shell`, 'info')
       break
