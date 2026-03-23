@@ -107,6 +107,7 @@ export interface ActiveOperation {
   startedAt: number
   durationMs: number
   label: string
+  heatMultiplier?: number // --loud: 2.0 | default: 1.0 | --silent: 0.75
 }
 
 // ─── Prestige ─────────────────────────────────────────────────────────────────
