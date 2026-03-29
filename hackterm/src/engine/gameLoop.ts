@@ -36,18 +36,20 @@ let lastCountdownSecond = -1
 
 // ─── FBI message pools ────────────────────────────────────────────────────────
 
-const FBI_MONITOR_MESSAGES: [string, string][] = [
-  [`[FBI_TRX] Correlation sweep active on flagged subnet.`,
-   `           Traffic signature match: ${Math.floor(55 + Math.random() * 30)}% confidence.`],
-  [`[FBI_TRX] FISA warrant submitted for ISP log disclosure.`,
-   `           Awaiting judicial approval. Monitoring continues.`],
-  [`[FBI_TRX] Deep packet inspection enabled on egress routes.`,
-   `           Behavioral pattern analysis running.`],
-  [`[FBI_TRX] Subpoena issued to hosting provider.`,
-   `           Historical session data requested.`],
-  [`[FBI_TRX] Geo-correlation sweep in progress.`,
-   `           Narrowing origin range. Stand by.`],
-]
+function getFbiMonitorMessages(): [string, string][] {
+  return [
+    [`[FBI_TRX] Correlation sweep active on flagged subnet.`,
+     `           Traffic signature match: ${Math.floor(55 + Math.random() * 30)}% confidence.`],
+    [`[FBI_TRX] FISA warrant submitted for ISP log disclosure.`,
+     `           Awaiting judicial approval. Monitoring continues.`],
+    [`[FBI_TRX] Deep packet inspection enabled on egress routes.`,
+     `           Behavioral pattern analysis running.`],
+    [`[FBI_TRX] Subpoena issued to hosting provider.`,
+     `           Historical session data requested.`],
+    [`[FBI_TRX] Geo-correlation sweep in progress.`,
+     `           Narrowing origin range. Stand by.`],
+  ]
+}
 
 const FBI_RAID_MESSAGES = [
   [`[FBI_RAID] Physical address narrowed to a 3-block radius.`,
@@ -165,7 +167,7 @@ function handleHeatEvents() {
     const sinceLast = Date.now() - lastFbiEventAt
     if (lastFbiEventAt === 0 || sinceLast > FBI_MONITOR_INTERVAL_MS) {
       useGameStore.setState({ lastFbiEventAt: Date.now() })
-      const [line1, line2] = pickRandom(FBI_MONITOR_MESSAGES)
+      const [line1, line2] = pickRandom(getFbiMonitorMessages())
       print(``, 'default')
       print(line1, 'warning')
       print(line2, 'warning')
@@ -305,7 +307,7 @@ function handleOperationComplete(op: ActiveOperation) {
     }
 
     case 'exfiltrate': {
-      const value = Math.round((node.baseIncome * 200 + Math.random() * 300) * 100) / 100
+      const value = op.fileValue ?? Math.round((node.baseIncome * 200 + Math.random() * 300) * 100) / 100
       store.addMoney(value)
       store.addHeat(node.heatOnBreach * 0.5)
       store.dirtyNodeLogs(op.targetId)

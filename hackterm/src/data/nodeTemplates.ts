@@ -175,7 +175,7 @@ export const NODE_TEMPLATES: NodeTemplate[] = [
     baseIncomeRange: [0.05, 0.15],
     incomeMultiplierRange: [1.0, 1.2],
     heatOnBreachRange: [1, 3],
-    filesystemFactory: (_hostname) =>
+    filesystemFactory: () =>
       makeDir('/', [
         makeDir('etc', [
           makeFile('config.cfg', ROUTER_CONFIGS[Math.floor(Math.random() * ROUTER_CONFIGS.length)]),

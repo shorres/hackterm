@@ -53,6 +53,7 @@ export const exfiltrateCommand: CommandHandler = {
       startedAt: Date.now(),
       durationMs: EXFIL_DURATION_MS,
       label: `exfiltrate ${args[0]}`,
+      fileValue: file.value,
     })
   },
 }

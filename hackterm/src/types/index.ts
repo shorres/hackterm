@@ -110,6 +110,7 @@ export interface ActiveOperation {
   durationMs: number
   label: string
   heatMultiplier?: number // --loud: 2.0 | default: 1.0 | --silent: 0.75
+  fileValue?: number      // exfiltrate: pre-computed file value
 }
 
 // ─── Prestige ─────────────────────────────────────────────────────────────────

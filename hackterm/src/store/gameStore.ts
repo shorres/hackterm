@@ -481,6 +481,3 @@ export const useGameStore = create<Store>()(
   )
 )
 
-// Convenience selector hooks
-export const selectNode = (id: string) => (s: Store) =>
-  s.nodes.find((n) => n.id === id)
