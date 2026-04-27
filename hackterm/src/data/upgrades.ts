@@ -56,10 +56,6 @@ export function getMaxBackdoors(ramLevel: number): number {
   return 2 + ramLevel * 2
 }
 
-export function getIncomeMultiplier(cpuLevel: number): number {
-  return 1 + cpuLevel * 0.2
-}
-
 export function getExploitSpeedMultiplier(cpuLevel: number): number {
   return 1 + cpuLevel * 0.3
 }

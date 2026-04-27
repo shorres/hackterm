@@ -26,11 +26,10 @@ export const upgradeCommand: CommandHandler = {
         print(`    ${def.effect}`, 'info')
       } else {
         const currentLevel = upgrades[id]
-        const def2 = HARDWARE_UPGRADES[id]
-        if (currentLevel >= def2.maxLevel) {
-          print(`upgrade: ${def2.label} is already at max level`, 'warning')
+        if (currentLevel >= def.maxLevel) {
+          print(`upgrade: ${def.label} is already at max level`, 'warning')
         } else {
-          const cost = upgradeCost(def2, currentLevel)
+          const cost = upgradeCost(def, currentLevel)
           print(
             `upgrade: Insufficient funds — need ${formatMoney(cost)}, have ${formatMoney(money)}`,
             'error'

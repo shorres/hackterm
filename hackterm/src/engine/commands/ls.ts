@@ -37,22 +37,17 @@ export const lsCommand: CommandHandler = {
     const dirs = dir.children.filter((c) => c.type === 'dir')
     const files = dir.children.filter((c) => c.type === 'file')
 
-    const entries: string[] = [
-      ...dirs.map((d) => `\x1b[1m${d.name}/\x1b[0m`), // bold for dirs (handled in renderer)
-      ...files.map((f) => f.name),
-    ]
-
-    // Print in columns
-    const maxLen = Math.max(...entries.map((e) => e.replace(/\x1b\[[0-9;]*m/g, '').length))
-    const colWidth = maxLen + 2
-    const cols = Math.max(1, Math.floor(60 / colWidth))
-
     // Format dirs and files with type indicator
     const dirNames = dirs.map((d) => d.name + '/')
     const fileNames = files.map((f) => {
       const fFile = f as import('../../types').FSFile
       return fFile.value ? `${f.name} *` : f.name
     })
+
+    // Print in columns
+    const maxLen = Math.max(...dirNames.map((n) => n.length), ...fileNames.map((n) => n.length))
+    const colWidth = maxLen + 2
+    const cols = Math.max(1, Math.floor(60 / colWidth))
 
     // Print dirs first, then files
     if (dirNames.length > 0) {
